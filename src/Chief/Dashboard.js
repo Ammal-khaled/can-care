@@ -1,182 +1,218 @@
 
-// src/Dashboard.js
-import React, { useState } from 'react';
-import './style/Dashboard.css';
+// src/ChiefDashboard.jsx
+import React, { useEffect, useMemo, useState } from "react";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
+import "./style/Dashboard.css";
 
-/**
- * Chief of Department Dashboard (data-driven, no dummy data)
- * - Calendar (compact, read-only) — Sunday-first with correct month alignment
- * - KPIs (read-only)
- * - Today’s Appointments (compact list: View/Edit/Cancel + Add)
- * - Compact chart placeholders (Department Mix donut, Gender Trend) -> Now real charts (Recharts)
- * - Review & Oversight quick actions (top-right column)
- * - In-dashboard modals: Add/Edit/View/Cancel Appointment, Create Post, Send Notification
- *
- * Props:
- * stats: {
- *   patientsUnderCare: number,
- *   doctorsOnDuty: number,
- *   nursesAssigned: number,
- *   appointmentsToday: number,
- * }
- * appointmentsTodayList: {
- *   id:string, patient:string, doctor:string, date:string, time:string,
- *   status:'Scheduled'|'Confirmed'|'Completed'|'Cancelled'
- * }[]
- * departmentMix: { name:string, value:number }[] // % per department (sum ≈ 100)
- * genderTrend: { t:string, male:number, female:number }[] // time series for charts
- * recentActivity: string[]
- * onDutyDoctors: string[]
- * onDutyNurses: string[]
- * onNavigate: (path:string) => void
- *
- * onAddAppointment: (appointment) => Promise<void>|void
- * onEditAppointment: (appointment) => Promise<void>|void
- * onCancelAppointment: (id:string) => Promise<void>|void
- * onCreatePost: (payload) => Promise<void>|void
- * onSendNotification: (payload) => Promise<void>|void
- */
-
-// ===== Real charts imports (Recharts) =====
 import {
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  Tooltip,
   ResponsiveContainer,
-  PieChart, Pie, Cell, Tooltip, Legend,
-  AreaChart, Area, XAxis, YAxis, CartesianGrid
-} from 'recharts';
+} from "recharts";
 
-// ===== Timeframe utilities (date-fns) =====
-import { parseISO, isWithinInterval, startOfDay, endOfDay, addDays } from 'date-fns';
-
-/* --------- Calendar helper (Sunday-first) --------- */
-const buildMonthGrid = (baseDate = new Date()) => {
-  const year = baseDate.getFullYear();
-  const month = baseDate.getMonth(); // 0..11
-  const first = new Date(year, month, 1);
-  const last = new Date(year, month + 1, 0);
-  const daysInMonth = last.getDate();
-  const startWeekday = first.getDay(); // 0=Sun .. 6=Sat (SUNDAY-FIRST)
-  const today = new Date();
-  const isSameDay = (d) =>
-    d.getFullYear() === today.getFullYear() &&
-    d.getMonth() === today.getMonth() &&
-    d.getDate() === today.getDate();
-  const grid = [];
-  // Leading blanks from previous month
-  for (let i = 0; i < startWeekday; i++) {
-    grid.push({ label: '', inMonth: false, isToday: false, dateISO: '' });
-  }
-  // Current month days
-  for (let day = 1; day <= daysInMonth; day++) {
-    const d = new Date(year, month, day);
-    const dateISO = d.toISOString().slice(0, 10);
-    grid.push({
-      label: String(day),
-      inMonth: true,
-      isToday: isSameDay(d),
-      dateISO,
-    });
-  }
-  // Pad to full 6 weeks (42 cells)
-  while (grid.length < 42) {
-    grid.push({ label: '', inMonth: false, isToday: false, dateISO: '' });
-  }
-  const monthName = baseDate.toLocaleString('default', { month: 'long' });
-  const weekdayShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  return { grid, monthName, year, weekdayShort };
+// ---- LocalStorage keys
+const LS = {
+  A: "ls_appts",
+  P: "ls_patients",
+  D: "ls_doctors",
+  N: "ls_nurses",
+  W: "ls_waitlist",
+  T: "ls_transfers",
+  POSTS: "ls_posts",
+  NTF: "ls_notifications",
 };
 
-export default function ChiefDashboard({
-  stats,
-  appointmentsTodayList = [],
-  departmentMix = [],
-  genderTrend = [],
-  recentActivity = [],
-  onDutyDoctors = [],
-  onDutyNurses = [],
-  onNavigate = () => {},
-  onAddAppointment,
-  onEditAppointment,
-  onCancelAppointment,
-  onCreatePost,
-  onSendNotification,
-}) {
-  const { grid: calendarGrid, monthName, year, weekdayShort } = buildMonthGrid(new Date());
+// ---- Helpers (no external deps)
+const fmtDay = (d) => d?.toISOString().split("T")[0];
+const parseISO = (s) => {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+const inRange = (dateStr, start, end) => {
+  const d = parseISO(dateStr);
+  return (!start || d >= start) && (!end || d <= end);
+};
 
-  // ======== Modal router: 'appt-add' | 'appt-edit' | 'appt-view' | 'appt-delete' | 'post-add' | 'notify-send' ========
-  const [modal, setModal] = useState({ type: '', payload: null });
-  const open = (type, payload = null) => setModal({ type, payload });
-  const close = () => setModal({ type: '', payload: null });
+// ---- Initial seed (replace with API when ready)
+const initialAppointments = [
+  { id: "A-001", patient: "Ahmad Saleh", doctor: "Dr. Omar Khaled", date: "2025-12-20", time: "10:00 AM", status: "Scheduled" },
+  { id: "A-002", patient: "Sara Mahmoud",  doctor: "Dr. Lina Yousef",   date: fmtDay(new Date()), time: "11:30 AM", status: "Confirmed" },
+];
+const initialDoctors = [
+  { id: "D-001", name: "Dr. Omar Khaled",  department: "Dermatology", city: "Amman", specialization: "Dermatology" },
+  { id: "D-002", name: "Dr. Lina Yousef",  department: "Neurology",   city: "Amman", specialization: "Neurology"   },
+];
+const initialNurses = [
+  { id: "N-001", name: "Nurse Rania", department: "Dermatology" },
+  { id: "N-002", name: "Nurse Yara",  department: "Neurology"   },
+];
+const initialPatients = [
+  { id: "P-001", name: "Ahmad Saleh",  phone: "0790000001" },
+  { id: "P-002", name: "Sara Mahmoud", phone: "0790000002" },
+];
+const initialWaitlist   = [];
+const initialTransfers  = [];
+const initialPosts      = [];
+const initialNotifs     = [];
 
-  // ======== KPIs ========
+const ChiefDashboard = () => {
+  // Persistent state (shared model with clerk)
+  const [appointments, setAppointments] = useState(
+    () => JSON.parse(localStorage.getItem(LS.A) ?? "null") ?? initialAppointments
+  );
+  const [doctors, setDoctors] = useState(
+    () => JSON.parse(localStorage.getItem(LS.D) ?? "null") ?? initialDoctors
+  );
+  const [nurses, setNurses] = useState(
+    () => JSON.parse(localStorage.getItem(LS.N) ?? "null") ?? initialNurses
+  );
+  const [patients, setPatients] = useState(
+    () => JSON.parse(localStorage.getItem(LS.P) ?? "null") ?? initialPatients
+  );
+  const [waitlist, setWaitlist] = useState(
+    () => JSON.parse(localStorage.getItem(LS.W) ?? "null") ?? initialWaitlist
+  );
+  const [transfers, setTransfers] = useState(
+    () => JSON.parse(localStorage.getItem(LS.T) ?? "null") ?? initialTransfers
+  );
+
+  // NEW: posts & notifications persistence
+  const [posts, setPosts] = useState(
+    () => JSON.parse(localStorage.getItem(LS.POSTS) ?? "null") ?? initialPosts
+  );
+  const [notifications, setNotifications] = useState(
+    () => JSON.parse(localStorage.getItem(LS.NTF)   ?? "null") ?? initialNotifs
+  );
+
+  useEffect(() => localStorage.setItem(LS.A, JSON.stringify(appointments)), [appointments]);
+  useEffect(() => localStorage.setItem(LS.D, JSON.stringify(doctors)),      [doctors]);
+  useEffect(() => localStorage.setItem(LS.N, JSON.stringify(nurses)),       [nurses]);
+  useEffect(() => localStorage.setItem(LS.P, JSON.stringify(patients)),     [patients]);
+  useEffect(() => localStorage.setItem(LS.W, JSON.stringify(waitlist)),     [waitlist]);
+  useEffect(() => localStorage.setItem(LS.T, JSON.stringify(transfers)),    [transfers]);
+
+  useEffect(() => localStorage.setItem(LS.POSTS, JSON.stringify(posts)),            [posts]);
+  useEffect(() => localStorage.setItem(LS.NTF,   JSON.stringify(notifications)),    [notifications]);
+
+  // Calendar + timeframe (same logic you sent)
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const dayStr = fmtDay(selectedDate);
+
+  const [timeframe, setTimeframe] = useState("7d"); // today, 7d, 30d, all, custom
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd,   setCustomEnd]   = useState("");
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const makeOffset = (days) => new Date(todayStart.getTime() - days * 86400000);
+
+  let rangeStart = null, rangeEnd = null;
+  if (timeframe === "today") {
+    rangeStart = todayStart;
+    rangeEnd   = new Date(todayStart.getTime() + 86399999);
+  } else if (timeframe === "7d") {
+    rangeStart = makeOffset(6);
+    rangeEnd   = new Date(todayStart.getTime() + 86399999);
+  } else if (timeframe === "30d") {
+    rangeStart = makeOffset(29);
+    rangeEnd   = new Date(todayStart.getTime() + 86399999);
+  } else if (timeframe === "custom") {
+    rangeStart = customStart ? parseISO(customStart) : null;
+    rangeEnd   = customEnd   ? parseISO(customEnd)   : null;
+  } // all => nulls
+
+  // KPIs
   const kpis = [
-    { label: 'Patients Under Care', value: stats?.patientsUnderCare ?? 0 },
-    { label: 'Doctors On Duty', value: stats?.doctorsOnDuty ?? 0 },
-    { label: 'Nurses Assigned', value: stats?.nursesAssigned ?? 0 },
-    { label: 'Appointments Today', value: stats?.appointmentsToday ?? 0 },
+    { label: "Patients Under Care", value: patients.length },
+    { label: "Doctors On Duty",     value: doctors.length  },
+    { label: "Nurses Assigned",     value: nurses.length   },
+    { label: "Appointments Today",  value: appointments.filter((a) => a.date === fmtDay(new Date())).length },
   ];
 
-  // ======== Timeframe state for charts ========
-  const [timeframe, setTimeframe] = useState('7d'); // today, 7d, 30d, all, custom
-  const [customStart, setCustomStart] = useState('');
-  const [customEnd, setCustomEnd] = useState('');
+  // Data in timeframe
+  const apptsInTimeframe = useMemo(() => {
+    if (timeframe === "all") return appointments;
+    return appointments.filter((a) => inRange(a.date, rangeStart, rangeEnd));
+  }, [appointments, timeframe, customStart, customEnd]);
 
-  // ======== Range calculation (safer with startOfDay/endOfDay) ========
-  const now = new Date();
-  const todayStart = startOfDay(now);
-  const makeOffset = (days) => addDays(todayStart, -days);
+  // Dept donut
+  const getDeptByDoctorName = (name) => doctors.find((d) => d.name === name)?.department ?? "Unknown";
 
-  let rangeStart = null,
-    rangeEnd = null;
-  if (timeframe === 'today') {
-    rangeStart = todayStart;
-    rangeEnd = endOfDay(todayStart);
-  } else if (timeframe === '7d') {
-    rangeStart = makeOffset(6);
-    rangeEnd = endOfDay(todayStart);
-  } else if (timeframe === '30d') {
-    rangeStart = makeOffset(29);
-    rangeEnd = endOfDay(todayStart);
-  } else if (timeframe === 'custom') {
-    rangeStart = customStart ? startOfDay(parseISO(customStart)) : null;
-    rangeEnd = customEnd ? endOfDay(parseISO(customEnd)) : null;
-  } else if (timeframe === 'all') {
-    rangeStart = null;
-    rangeEnd = null;
-  }
+  const deptData = useMemo(() => {
+    const counts = {};
+    apptsInTimeframe.forEach((a) => {
+      const dep = getDeptByDoctorName(a.doctor);
+      counts[dep] = (counts[dep] ?? 0) + 1;
+    });
+    if (!Object.keys(counts).length) {
+      doctors.forEach((d) => {
+        const key = d.department ?? "Unknown";
+        counts[key] = (counts[key] ?? 0) + 1;
+      });
+    }
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [apptsInTimeframe, doctors]);
 
-  // ======== Filter genderTrend by timeframe ========
-  const genderTrendFiltered = Array.isArray(genderTrend)
-    ? genderTrend.filter((p) => {
-        if (!rangeStart || !rangeEnd) return true; // "all" or undefined -> keep all
-        const d = typeof p.t === 'string' ? parseISO(p.t) : new Date(p.t);
-        return !isNaN(d) && isWithinInterval(d, { start: rangeStart, end: rangeEnd });
-      })
-    : [];
+  const COLORS = ["#5b8cff", "#8e9afc", "#ff6b6b", "#2ecc71", "#f5a623", "#6c5ce7"];
 
-  // ======== Colors for donut segments ========
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16'];
+  // Alerts
+  const todaysVisits     = appointments.filter((a) => a.date === dayStr);
+  const cancelledInRange = apptsInTimeframe.filter((a) => a.status === "Cancelled");
 
-  const handleDayClick = (dateISO) => {
-    if (!dateISO) return;
-    // Sync calendar click with chart timeframe (optional)
-    setTimeframe('custom');
-    setCustomStart(dateISO);
-    setCustomEnd(dateISO);
-    // Navigate to appointments page filtered by date
-    onNavigate(`/appointments?date=${encodeURIComponent(dateISO)}`);
+  // Interventions
+  const [editingAppt,  setEditingAppt]    = useState(null);
+  const [confirmDelete,setConfirmDelete]  = useState(null);
+
+  const saveAppointment = (ap) => {
+    setAppointments((prev) =>
+      prev.some((x) => x.id === ap.id) ? prev.map((x) => (x.id === ap.id ? ap : x)) : [ap, ...prev]
+    );
   };
+  const updateStatus = (id, status) =>
+    setAppointments((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
+  const deleteAppointment = (id) =>
+    setAppointments((prev) => prev.filter((a) => a.id !== id));
+
+  // NEW: Actions — post & notification modals
+  const [showPost,  setShowPost]  = useState(false);
+  const [showNotif, setShowNotif] = useState(false);
+
+  const onCreatePost = (payload) => {
+    const id = `POST-${Math.random().toString(36).slice(2,7)}`;
+    const createdAt = new Date().toISOString();
+    setPosts((prev) => [{ id, createdAt, ...payload }, ...prev]);
+    alert("Post created ✅");
+  };
+
+  const onSendNotification = (payload) => {
+    const id = `NTF-${Math.random().toString(36).slice(2,7)}`;
+    const sentAt = new Date().toISOString();
+    setNotifications((prev) => [{ id, sentAt, ...payload }, ...prev]);
+    alert("Notification sent ✅");
+  };
+
+  // Derived flags (optional): to auto-collapse when empty
+  const hasAppointments    = apptsInTimeframe.length > 0;
+  const hasAlertsToday     = todaysVisits.length > 0;
+  const hasAlertsCancelled = cancelledInRange.length > 0;
+  const hasAnyAlerts       = hasAlertsToday || hasAlertsCancelled;
 
   return (
     <div className="chief-page">
-      {/* Header */}
+      {/* Header with quick actions */}
       <header className="chief-header">
         <div>
           <h1>Department Oversight</h1>
+          <p>Read-first, intervene when needed</p>
         </div>
         <div className="chief-toolbar">
           <span className="chief-badge">Today: {new Date().toLocaleDateString()}</span>
-          <button className="chief-btn primary" onClick={() => open('post-add')}>Create Post</button>
-          <button className="chief-btn primary" onClick={() => open('notify-send')}>Send Notification</button>
+          <button className="chief-btn primary" onClick={() => setShowPost(true)}>Create Post</button>
+          <button className="chief-btn primary" onClick={() => setShowNotif(true)}>Send Notification</button>
         </div>
       </header>
 
@@ -195,348 +231,300 @@ export default function ChiefDashboard({
         {/* LEFT COLUMN */}
         <section className="chief-card">
           {/* Calendar */}
-          <div className="chief-card-title">
-            <h3>{monthName} {year}</h3>
-          </div>
-          {/* Weekday header (Sun..Sat) */}
-          <div className="chief-calendar chief-calendar--header" aria-hidden="true">
-            {weekdayShort.map((w) => (
-              <div key={w} className="chief-day head">{w}</div>
-            ))}
-          </div>
-          <div className="chief-calendar" role="grid" aria-label={`${monthName} ${year}`}>
-            {calendarGrid.map((cell, i) => (
-              <button
-                key={i}
-                type="button"
-                className={[
-                  'chief-day',
-                  !cell.inMonth ? 'muted' : '',
-                  cell.isToday ? 'today' : '',
-                ].join(' ')}
-                onClick={() => handleDayClick(cell.dateISO)}
-                disabled={!cell.inMonth}
-                aria-current={cell.isToday ? 'date' : undefined}
-                aria-label={cell.dateISO || 'out-of-month'}
-              >
-                {cell.label}
-              </button>
-            ))}
+          <div className="chief-card-title"><h3>Calendar</h3></div>
+          <div style={{ background: "#fff", borderRadius: 12, border: "1px solid var(--border)", padding: 8 }}>
+            <Calendar value={selectedDate} onChange={setSelectedDate} />
+            <div style={{ marginTop: 8, color: "var(--muted)" }}>Selected: {dayStr}</div>
           </div>
 
-          {/* Department Mix (real donut chart) */}
-          <div className="chief-subcard">
-            <div className="chief-subcard-title"><h4>Department Mix</h4></div>
-            <div className="chief-donut">
-              <ResponsiveContainer width="100%" height={240}>
-                <PieChart>
-                  <Pie
-                    data={departmentMix || []}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={1}
-                    isAnimationActive={true}
-                  >
-                    {(departmentMix || []).map((_, i) => (
-                      <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend verticalAlign="bottom" height={32} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            {/* Optional textual legend:
-            <ul className="chief-legend">
-              {(departmentMix || []).map(d => <li key={d.name}>{d.name}: {d.value}%</li>)}
-            </ul> */}
-          </div>
-
-          {/* Today’s Appointments (compact with actions) */}
+          {/* Timeframe */}
           <div className="chief-subcard">
             <div className="chief-subcard-title">
-              <h4>Today’s Appointments</h4>
-              <div className="chief-inline-actions">
-                <button className="chief-btn small primary" onClick={() => open('appt-add')}>Add</button>
-              </div>
+              <h4>Timeframe</h4>
+              <span className="chief-badge">{apptsInTimeframe.length}</span>
             </div>
-            <ul className="chief-today-list">
-              {(appointmentsTodayList || []).slice(0, 6).map((a) => (
-                <li key={a.id} className="chief-today-item">
-                  <div className="chief-today-main">
-                    <span className="chief-strong">{a.patient}</span> with {a.doctor}
-                  </div>
-                  <div className="chief-today-meta">
-                    {a.time} · <span className={`chief-badge chip ${a.status.toLowerCase()}`}>{a.status}</span>
-                  </div>
-                  <div className="chief-list-actions">
-                    <button className="chief-link" onClick={() => open('appt-view', a)}>View</button>
-                    <button className="chief-link" onClick={() => open('appt-edit', a)}>Edit</button>
-                    <button className="chief-link danger" onClick={() => open('appt-delete', a)}>Cancel</button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="chief-inline-actions">
+              <select value={timeframe} onChange={(e) => setTimeframe(e.target.value)}>
+                <option value="today">Today</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="all">All</option>
+                <option value="custom">Custom</option>
+              </select>
+              {timeframe === "custom" && (
+                <>
+                  <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} />
+                  <span>to</span>
+                  <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} />
+                </>
+              )}
+            </div>
+            <div style={{ marginTop: 8, fontSize: 12, color: "var(--muted)" }}>
+              Range: {rangeStart ? fmtDay(rangeStart) : "—"} → {rangeEnd ? fmtDay(rangeEnd) : "—"}
+            </div>
           </div>
 
-          {/* Gender Trend (real area chart + timeframe controls) */}
-          <div className="chief-subcard">
-            <div className="chief-subcard-title">
-              <h4>Gender Trend</h4>
-              <div className="chief-inline-actions">
-                <select value={timeframe} onChange={(e) => setTimeframe(e.target.value)}>
-                  <option value="today">اليوم</option>
-                  <option value="7d">آخر 7 أيام</option>
-                  <option value="30d">آخر 30 يوم</option>
-                  <option value="all">الكل</option>
-                  <option value="custom">مُخصّص</option>
-                </select>
-                {timeframe === 'custom' && (
-                  <>
-                    <input type="date" value={customStart} onChange={(e) => setCustomStart(e.target.value)} />
-                    <input type="date" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} />
-                  </>
-                )}
+          {/* On‑Duty Roster (compact stacked) */}
+          <div className="chief-panel" style={{ marginTop: 14 }}>
+            <div className="chief-subcard-title"><h4>On‑Duty Roster</h4></div>
+            <div className="chief-roster">
+              <div>
+                <h5>Doctors</h5>
+                <ul className="compact-list">{doctors.map((d) => <li key={d.id}>{d.name}</li>)}</ul>
+              </div>
+              <div>
+                <h5>Nurses</h5>
+                <ul className="compact-list">{nurses.map((n) => <li key={n.id}>{n.name}</li>)}</ul>
               </div>
             </div>
-            <div style={{ width: '100%', height: 280 }}>
-              <ResponsiveContainer>
-                <AreaChart data={genderTrendFiltered} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="maleGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.55} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="femaleGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ec4899" stopOpacity={0.55} />
-                      <stop offset="95%" stopColor="#ec4899" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="t" />
-                  <YAxis />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="male" stroke="#3b82f6" fill="url(#maleGrad)" />
-                  <Area type="monotone" dataKey="female" stroke="#ec4899" fill="url(#femaleGrad)" />
-                </AreaChart>
-              </ResponsiveContainer>
+          </div>
+
+          {/* Queues (compact stacked) */}
+          <div className="chief-panel" style={{ marginTop: 14 }}>
+            <div className="chief-card-title" style={{ marginBottom: 8 }}>
+              <h4>Queues</h4>
+              <span className="chief-badge">{waitlist.length + transfers.length}</span>
+            </div>
+            <div className="chief-status">
+              <div className="chip">Waitlist: {waitlist.length}</div>
+              <div className="chip">Transfers: {transfers.length}</div>
             </div>
           </div>
         </section>
 
         {/* RIGHT COLUMN */}
         <section className="chief-card">
-          {/* Review & Oversight */}
-          <div className="chief-block">
-            <h3>Review & Oversight</h3>
-            <div className="chief-quick">
-              <button className="chief-btn primary" onClick={() => open('post-add')}>Create Post</button>
-              <button className="chief-btn primary" onClick={() => open('notify-send')}>Send Notification</button>
-              <button className="chief-btn" onClick={() => open('appt-add')}>Add Appointment</button>
-              <button className="chief-btn" onClick={() => onNavigate('/appointments')}>Open Appointments Page</button>
-              <button className="chief-btn" onClick={() => onNavigate('/patients')}>View Patients</button>
-              <button className="chief-btn" onClick={() => onNavigate('/doctors')}>View Doctors</button>
-              <button className="chief-btn" onClick={() => onNavigate('/nurses')}>View Nurses</button>
+          {/* Donut chart at top */}
+          <div className="chief-subcard">
+            <div className="chief-subcard-title"><h4>Visits by Department</h4></div>
+            <div style={{ width: "100%", height: 320 }}>
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={deptData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={80}
+                    outerRadius={110}
+                    paddingAngle={3}
+                  >
+                    {deptData.map((_, i) => (
+                      <Cell key={`cell-${i}`} fill={["#5b8cff","#8e9afc","#ff6b6b","#2ecc71","#f5a623","#6c5ce7"][i % 6]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Recent Activity */}
-          <div className="chief-block">
-            <h3>Recent Activity</h3>
-            <ul className="chief-activity">{(recentActivity || []).map((t, i) => <li key={i}>{t}</li>)}</ul>
-          </div>
-
-          {/* On-Duty Roster */}
-          <div className="chief-block">
-            <h3>On-Duty Roster</h3>
-            <div className="chief-roster">
-              <div>
-                <h5>Doctors</h5>
-                <ul>{(onDutyDoctors || []).map((d) => <li key={d}>{d}</li>)}</ul>
+          {/* Alerts (auto‑collapse when no alerts) */}
+          {hasAnyAlerts && (
+            <div className="chief-block">
+              <h3>Alerts</h3>
+              <div className="chief-quick" style={{ marginBottom: 10 }}>
+                <span className="chief-badge">Today’s: {todaysVisits.length}</span>
+                <span className="chief-badge">Cancelled: {cancelledInRange.length}</span>
               </div>
-              <div>
-                <h5>Nurses</h5>
-                <ul>{(onDutyNurses || []).map((n) => <li key={n}>{n}</li>)}</ul>
-              </div>
-            </div>
-          </div>
 
-          {/* Patient Status (Today) */}
-          <div className="chief-block">
-            <h3>Patient Status (Today)</h3>
-            <div className="chief-status">
-              {/* Replace with live buckets if you have them */}
-              <div className="chip">Stable</div>
-              <div className="chip">Observation</div>
-              <div className="chip">Critical</div>
-              <div className="chip">Post‑Op</div>
-            </div>
-          </div>
+              {hasAlertsToday && (
+                <>
+                  <h4 style={{ margin: 0 }}>Today’s Visits</h4>
+                  <ul className="chief-activity">
+                    {todaysVisits.map((v) => (
+                      <li key={v.id}>Today: <strong>{v.patient}</strong> with <strong>{v.doctor}</strong> at {v.time}.</li>
+                    ))}
+                  </ul>
+                </>
+              )}
 
-          {/* Alerts (optional) */}
-          <div className="chief-block">
-            <h3>Alerts</h3>
-            <ul className="chief-alerts">{/* map alerts here if desired */}</ul>
-          </div>
+              {hasAlertsCancelled && (
+                <>
+                  <hr style={{ border: "none", borderTop: "1px solid var(--border)", margin: "12px 0" }} />
+                <h4 style={{ margin: 0 }}>Cancelled (selected range)</h4>
+                  <ul className="chief-activity">
+                    {cancelledInRange.map((v) => (
+                      <li key={v.id}>{v.patient} — {v.doctor} on {v.date} ({v.time})</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Appointments */}
+          {hasAppointments ? (
+            <div className="chief-block">
+              <h3>Appointments (selected range)</h3>
+              <ul className="chief-today-list">
+                {apptsInTimeframe.map((a) => (
+                  <li key={a.id} className="chief-today-item">
+                    <div className="chief-today-main">
+                      <span className="chief-strong">{a.patient}</span> with {a.doctor}
+                    </div>
+                    <div className="chief-today-meta">
+                      {a.date} · {a.time} · <span className={`chief-badge chip ${a.status.toLowerCase()}`}>{a.status}</span>
+                    </div>
+                    <div className="chief-list-actions">
+                      {a.status !== "Completed" && (
+                        <button className="chief-btn" onClick={() => updateStatus(a.id, "Completed")}>Mark Completed</button>
+                      )}
+                      {a.status !== "Cancelled" && (
+                        <button className="chief-btn danger" onClick={() => updateStatus(a.id, "Cancelled")}>Cancel</button>
+                      )}
+                      <button className="chief-link" onClick={() => setEditingAppt({ ...a })}>Edit</button>
+                      <button className="chief-link danger" onClick={() => setConfirmDelete({ type: "appointment", id: a.id })}>Delete</button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <div className="chief-block">
+              <h3>Appointments (selected range)</h3>
+              <div className="chief-status"><div className="chip">No appointments in selected range</div></div>
+            </div>
+          )}
         </section>
       </div>
 
-      {/* --------------------- MODALS --------------------- */}
-      {modal.type === 'appt-add' && (
+      {/* Modals */}
+      {editingAppt && (
         <AppointmentModal
-          type="add"
-          onSave={async (form) => { await onAddAppointment?.(form); close(); }}
-          onClose={close}
+          initial={editingAppt}
+          patients={patients}
+          doctors={doctors}
+          appointments={appointments}
+          onSave={(ap) => { saveAppointment(ap); setEditingAppt(null); }}
+          onClose={() => setEditingAppt(null)}
         />
       )}
-      {modal.type === 'appt-edit' && modal.payload && (
-        <AppointmentModal
-          type="edit"
-          appointment={modal.payload}
-          onSave={async (form) => { await onEditAppointment?.(form); close(); }}
-          onClose={close}
-        />
-      )}
-      {modal.type === 'appt-view' && modal.payload && (
-        <ViewAppointmentModal appointment={modal.payload} onClose={close} />
-      )}
-      {modal.type === 'appt-delete' && modal.payload && (
-        <DeleteModal
-          appointment={modal.payload}
-          onDelete={async () => { await onCancelAppointment?.(modal.payload.id); close(); }}
-          onClose={close}
-        />
-      )}
-      {modal.type === 'post-add' && (
+
+      {showPost && (
         <PostModal
-          onSave={async (payload) => { await onCreatePost?.(payload); close(); }}
-          onClose={close}
+          onSave={(payload) => { onCreatePost(payload); setShowPost(false); }}
+          onClose={() => setShowPost(false)}
         />
       )}
-      {modal.type === 'notify-send' && (
+
+      {showNotif && (
         <NotifyModal
-          onSend={async (payload) => { await onSendNotification?.(payload); close(); }}
-          onClose={close}
+          onSend={(payload) => { onSendNotification(payload); setShowNotif(false); }}
+          onClose={() => setShowNotif(false)}
+        />
+      )}
+
+      {confirmDelete && (
+        <ConfirmDialog
+          title={`Delete ${confirmDelete.type}?`}
+          message="This action cannot be undone."
+          onConfirm={() => {
+            const { type, id } = confirmDelete;
+            if (type === "appointment") deleteAppointment(id);
+            setConfirmDelete(null);
+          }}
+          onClose={() => setConfirmDelete(null)}
         />
       )}
     </div>
   );
-}
+};
 
-/* ==================== Modal Components ==================== */
-function AppointmentModal({ type, appointment = {}, onSave, onClose }) {
-  const [form, setForm] = useState({
-    id: appointment.id || '',
-    patient: appointment.patient || '',
-    doctor: appointment.doctor || '',
-    date: appointment.date || '',
-    time: appointment.time || '',
-    status: appointment.status || 'Scheduled',
-  });
-  const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-  const canSave = form.patient && form.doctor && form.date && form.time && form.status;
+// ====== Modals ======
+
+const AppointmentModal = ({ initial, patients, doctors, appointments, onSave, onClose }) => {
+  const [form, setForm] = useState(initial);
+
+  const availableSlots = (docName, dateStr) => {
+    const taken = appointments
+      .filter((a) => a.id !== form.id && a.doctor === docName && a.date === dateStr)
+      .map((a) => a.time);
+    const base = ["09:00 AM", "10:00 AM", "11:00 AM", "12:30 PM", "02:00 PM", "03:30 PM"];
+    return base.filter((s) => !taken.includes(s));
+  };
+
+  const slots = useMemo(() => {
+    if (!form.doctor || !form.date) return [];
+    return availableSlots(form.doctor, form.date);
+  }, [form.doctor, form.date, appointments, form.id]);
+
+  const save = () => {
+    if (!form.patient || !form.doctor || !form.date || !form.time) return alert("Fill all fields.");
+    onSave(form);
+  };
+
   return (
     <div className="chief-overlay">
-      <div className="chief-modal">
+      <div className="chief-modal" style={{ maxWidth: 480 }}>
         <div className="chief-modal-head">
-          <h4>{type === 'add' ? 'Add' : 'Edit'} Appointment</h4>
-          <button className="chief-icon" onClick={onClose} aria-label="Close">✕</button>
+          <h4>{String(form.id).startsWith("A-") ? "Edit Appointment" : "New Appointment"}</h4>
+          <button className="chief-icon" onClick={onClose}>✕</button>
         </div>
         <div className="chief-modal-body grid2">
-          <div className="field"><label>Patient</label><input name="patient" value={form.patient} onChange={change} /></div>
-          <div className="field"><label>Doctor</label><input name="doctor" value={form.doctor} onChange={change} /></div>
-          <div className="field"><label>Date</label><input type="date" name="date" value={form.date} onChange={change} /></div>
-          <div className="field"><label>Time</label><input type="time" name="time" value={form.time} onChange={change} /></div>
-          <div className="field"><label>Status</label>
-            <select name="status" value={form.status} onChange={change}>
-              <option>Scheduled</option>
-              <option>Confirmed</option>
-              <option>Completed</option>
-              <option>Cancelled</option>
+          <div className="field"><label>Patient</label>
+            <select value={form.patient} onChange={(e) => setForm({ ...form, patient: e.target.value })}>
+              {[form.patient, ...patients.map((p) => p.name)].filter(Boolean).map((n) => (
+                <option key={n}>{n}</option>
+              ))}
+            </select>
+          </div>
+          <div className="field"><label>Doctor</label>
+            <select value={form.doctor} onChange={(e) => setForm({ ...form, doctor: e.target.value })}>
+              {[form.doctor, ...doctors.map((d) => d.name)].filter(Boolean).map((n) => (
+                <option key={n}>{n}</option>
+              ))}
+            </select>
+          </div>
+          <div className="field"><label>Date</label>
+            <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+          </div>
+          <div className="field"><label>Time</label>
+            <select value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })}>
+              <option value="">Select time</option>
+              {slots.map((s) => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+          <div className="field col2"><label>Status</label>
+            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+              {["Scheduled", "Confirmed", "Completed", "Cancelled"].map((s) => <option key={s}>{s}</option>)}
             </select>
           </div>
         </div>
         <div className="chief-modal-actions">
-          <button className="chief-btn" onClick={onClose}>Close</button>
-          <button className="chief-btn primary" disabled={!canSave} onClick={() => onSave(form)}>Save</button>
+          <button className="chief-btn" onClick={save}>Save</button>
+          <button className="chief-btn" onClick={onClose}>Cancel</button>
         </div>
       </div>
     </div>
   );
-}
+};
 
-function ViewAppointmentModal({ appointment, onClose }) {
-  return (
-    <div className="chief-overlay">
-      <div className="chief-modal">
-        <div className="chief-modal-head">
-          <h4>Appointment Details</h4>
-          <button className="chief-icon" onClick={onClose} aria-label="Close">✕</button>
-        </div>
-        <div className="chief-modal-body grid2">
-          <div className="field"><label>ID</label><input readOnly value={appointment.id} /></div>
-          <div className="field"><label>Patient</label><input readOnly value={appointment.patient} /></div>
-          <div className="field"><label>Doctor</label><input readOnly value={appointment.doctor} /></div>
-          <div className="field"><label>Date</label><input readOnly value={appointment.date} /></div>
-          <div className="field"><label>Time</label><input readOnly value={appointment.time} /></div>
-          <div className="field"><label>Status</label><input readOnly value={appointment.status} /></div>
-        </div>
-        <div className="chief-modal-actions">
-          <button className="chief-btn primary" onClick={onClose}>Close</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DeleteModal({ appointment, onDelete, onClose }) {
-  return (
-    <div className="chief-overlay">
-      <div className="chief-modal">
-        <div className="chief-modal-head">
-          <h4>Cancel Appointment</h4>
-          <button className="chief-icon" onClick={onClose} aria-label="Close">✕</button>
-        </div>
-        <div className="chief-modal-body">
-          <p>
-            Cancel <strong>{appointment.id}</strong> for <strong>{appointment.patient}</strong> with{' '}
-            <strong>{appointment.doctor}</strong> on <strong>{appointment.date}</strong> at{' '}
-            <strong>{appointment.time}</strong>?
-          </p>
-        </div>
-        <div className="chief-modal-actions">
-          <button className="chief-btn" onClick={onClose}>Keep</button>
-          <button className="chief-btn danger" onClick={onDelete}>Cancel Appointment</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PostModal({ onSave, onClose }) {
-  const [form, setForm] = useState({ title: '', content: '', category: 'Diet', image: null });
+const PostModal = ({ onSave, onClose }) => {
+  const [form, setForm] = useState({ title: "", content: "", category: "Diet", image: null });
   const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-  const onFile = (e) => setForm({ ...form, image: e.target.files?.[0] || null });
+  const onFile = (e) => setForm({ ...form, image: e.target.files?.[0] ?? null });
   const canSave = form.title.trim() && form.content.trim();
+
   return (
     <div className="chief-overlay">
       <div className="chief-modal">
         <div className="chief-modal-head">
           <h4>Create Post</h4>
-          <button className="chief-icon" onClick={onClose} aria-label="Close">✕</button>
+          <button className="chief-icon" onClick={onClose}>✕</button>
         </div>
         <div className="chief-modal-body">
-          <div className="field"><label>Title</label><input name="title" value={form.title} onChange={change} /></div>
+          <div className="field"><label>Title</label>
+            <input name="title" value={form.title} onChange={change} />
+          </div>
           <div className="field"><label>Category</label>
             <select name="category" value={form.category} onChange={change}>
               <option>Diet</option><option>Exercise</option><option>Mental Health</option><option>Tips</option>
             </select>
           </div>
-          <div className="field"><label>Content</label><textarea name="content" rows={5} value={form.content} onChange={change} /></div>
+          <div className="field"><label>Content</label>
+            <textarea name="content" rows={5} value={form.content} onChange={change} />
+          </div>
           <div className="field">
             <label>Image (optional)</label>
             <label className="chief-attach">
@@ -553,20 +541,21 @@ function PostModal({ onSave, onClose }) {
       </div>
     </div>
   );
-}
+};
 
-function NotifyModal({ onSend, onClose }) {
+const NotifyModal = ({ onSend, onClose }) => {
   const [form, setForm] = useState({
-    audience: 'All', toId: '', subject: '', message: '', priority: 'Normal'
+    audience: "All", toId: "", subject: "", message: "", priority: "Normal"
   });
   const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   const canSend = form.subject.trim() && form.message.trim();
+
   return (
     <div className="chief-overlay">
       <div className="chief-modal wide">
         <div className="chief-modal-head">
           <h4>Send Notification</h4>
-          <button className="chief-icon" onClick={onClose} aria-label="Close">✕</button>
+          <button className="chief-icon" onClick={onClose}>✕</button>
         </div>
         <div className="chief-modal-body grid2">
           <div className="field"><label>Audience</label>
@@ -596,4 +585,24 @@ function NotifyModal({ onSend, onClose }) {
       </div>
     </div>
   );
-}
+};
+
+const ConfirmDialog = ({ title, message, onConfirm, onClose }) => (
+  <div className="chief-overlay">
+    <div className="chief-modal" style={{ maxWidth: 420 }}>
+      <div className="chief-modal-head">
+        <h4>{title}</h4>
+        <button className="chief-icon" onClick={onClose}>✕</button>
+      </div>
+      <div className="chief-modal-body">
+        <p style={{ color: "var(--muted)" }}>{message}</p>
+      </div>
+      <div className="chief-modal-actions">
+        <button className="chief-btn danger" onClick={onConfirm}>Delete</button>
+        <button className="chief-btn" onClick={onClose}>Cancel</button>
+      </div>
+    </div>
+  </div>
+);
+
+export default ChiefDashboard;
