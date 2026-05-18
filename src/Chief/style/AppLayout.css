@@ -1,0 +1,153 @@
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 24% 0%, rgba(221, 234, 255, 0.9), transparent 34%),
+    radial-gradient(circle at 92% 12%, rgba(236, 231, 255, 0.82), transparent 28%),
+    var(--cc-bg);
+  color: var(--cc-text);
+  padding: 18px;
+  gap: 18px;
+}
+
+.layout-sidebar {
+  width: 250px;
+  padding: 22px 14px;
+  display: flex;
+  flex-direction: column;
+  background: var(--cc-card);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 28px;
+  box-shadow: var(--cc-shadow);
+  backdrop-filter: blur(18px);
+  position: sticky;
+  top: 18px;
+  height: calc(100vh - 36px);
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--cc-text);
+  margin-bottom: 24px;
+  padding: 8px 14px 20px;
+  border-bottom: 1px solid rgba(228, 233, 244, 0.72);
+  letter-spacing: -0.02em;
+}
+
+.logo::after {
+  content: "Care operations";
+  display: block;
+  margin-top: 4px;
+  color: var(--cc-sidebar-text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.layout-scope {
+  margin: -14px 14px 20px;
+  color: var(--cc-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.layout-sidebar a {
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  text-decoration: none;
+  color: var(--cc-sidebar-text);
+  font-weight: 600;
+  border-radius: 18px;
+  transition: 0.2s ease;
+}
+
+.layout-sidebar a:hover,
+.layout-sidebar a.active {
+  background: linear-gradient(135deg, rgba(236, 231, 255, 0.92), rgba(230, 241, 255, 0.88));
+  color: var(--cc-primary);
+  box-shadow: inset 0 0 0 1px rgba(107, 116, 248, 0.08);
+}
+
+.layout-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 18px;
+}
+
+.layout-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 78px;
+  padding: 18px 26px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 28px;
+  box-shadow: var(--cc-shadow-sm);
+  backdrop-filter: blur(18px);
+}
+
+.layout-navbar h3 {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--cc-text);
+  letter-spacing: -0.02em;
+}
+
+.layout-navbar span {
+  display: block;
+  margin-top: 4px;
+  color: var(--cc-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.layout-navbar button {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(228, 233, 244, 0.9);
+  color: var(--cc-primary);
+  font-weight: 700;
+  padding: 10px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.layout-navbar button:hover {
+  background: var(--cc-purple);
+  color: var(--cc-primary);
+}
+
+.layout-content {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.44);
+  border-radius: 30px;
+  padding: 26px;
+  overflow-y: auto;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+@media (max-width: 840px) {
+  .app-layout {
+    flex-direction: column;
+    padding: 12px;
+  }
+
+  .layout-sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+  }
+
+  .layout-main {
+    gap: 12px;
+  }
+
+  .layout-navbar,
+  .layout-content {
+    padding: 20px;
+  }
+}

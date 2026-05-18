@@ -1,0 +1,107 @@
+.user-profile-page {
+  background: transparent;
+  min-height: 100%;
+  color: var(--cc-text);
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.profile-header h1 {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--cc-text);
+  letter-spacing: -0.03em;
+}
+
+.back-btn {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(107, 116, 248, 0.14);
+  border-radius: 999px;
+  padding: 10px 14px;
+  cursor: pointer;
+  color: var(--cc-primary);
+  font-weight: 800;
+}
+
+.profile-card,
+.note-item {
+  background: var(--cc-card);
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  border-radius: 26px;
+  box-shadow: var(--cc-shadow);
+  backdrop-filter: blur(16px);
+}
+
+.profile-card {
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.profile-card h2 {
+  font-size: 20px;
+  margin-bottom: 16px;
+  color: var(--cc-text);
+  border-bottom: 1px solid rgba(228, 233, 244, 0.72);
+  padding-bottom: 10px;
+  font-weight: 800;
+}
+
+.basic-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 18px;
+}
+
+.profile-card p {
+  font-size: 14px;
+  color: var(--cc-text);
+  margin-bottom: 8px;
+}
+
+.profile-card input,
+.add-note textarea {
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 16px;
+  border: 1px solid rgba(228, 233, 244, 0.9);
+  background: rgba(255, 255, 255, 0.74);
+}
+
+ul {
+  padding-left: 20px;
+}
+
+li {
+  padding: 4px 0;
+}
+
+.note-item {
+  padding: 13px;
+  margin-bottom: 10px;
+  box-shadow: none;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.add-note {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.add-note textarea {
+  min-height: 90px;
+}
+
+.add-note button,
+.save-btn {
+  width: fit-content;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-weight: 800;
+}

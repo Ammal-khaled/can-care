@@ -1,0 +1,140 @@
+.profile-page {
+  background: transparent;
+  min-height: 100%;
+  color: var(--cc-text);
+}
+
+.profile-header,
+.profile-card {
+  background: var(--cc-card);
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  border-radius: 26px;
+  box-shadow: var(--cc-shadow);
+  backdrop-filter: blur(16px);
+}
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22px;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, rgba(232, 227, 255, 0.78), rgba(255, 255, 255, 0.62));
+}
+
+.profile-header h1 {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.03em;
+}
+
+.role-badge.admin {
+  background: var(--cc-purple);
+  color: var(--cc-primary);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.profile-card {
+  padding: 24px;
+  margin-bottom: 22px;
+}
+
+.profile-card h2 {
+  font-size: 19px;
+  margin-bottom: 18px;
+  font-weight: 800;
+}
+
+.admin-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+}
+
+.admin-info-item span {
+  display: block;
+  font-size: 12px;
+  color: var(--cc-muted);
+  margin-bottom: 5px;
+  font-weight: 700;
+}
+
+.admin-info-item p {
+  font-size: 15px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.profile-search {
+  width: 100%;
+  padding: 13px 15px;
+  border-radius: 18px;
+  border: 1px solid rgba(228, 233, 244, 0.9);
+  margin-bottom: 20px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.profile-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.profile-tabs button {
+  padding: 10px 15px;
+  border-radius: 999px;
+  border: 1px solid rgba(107, 116, 248, 0.14);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--cc-primary);
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.profile-tabs button.active,
+.profile-tabs button:hover {
+  background: var(--cc-purple);
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--cc-card);
+  border-radius: 26px;
+  overflow: hidden;
+}
+
+.users-table th,
+.users-table td {
+  padding: 15px 18px;
+  text-align: left;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(228, 233, 244, 0.72);
+}
+
+.users-table tr:hover {
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.view-btn {
+  background: var(--cc-blue);
+  border: 1px solid rgba(107, 116, 248, 0.14);
+  color: var(--cc-primary);
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 8px 12px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 20px 0;
+  color: var(--cc-muted);
+}

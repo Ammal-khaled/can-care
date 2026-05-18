@@ -1,0 +1,394 @@
+.appointments-page {
+  background: transparent;
+  min-height: 100%;
+  color: var(--cc-text);
+}
+
+.appointments-page h1,
+.appointments-header h2 {
+  margin-bottom: 7px;
+  color: var(--cc-text);
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.appointments-page p {
+  margin-bottom: 20px;
+  color: var(--cc-muted);
+}
+
+.appointments-actions,
+.appointments-header,
+.appointments-filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.appointments-filter-chip {
+  margin: -6px 0 18px;
+}
+
+.appointments-actions input,
+.appointments-filters input,
+.search-input,
+.date-filter-wrapper input[type="date"],
+.modal input,
+.modal select {
+  flex: 1;
+  padding: 13px 15px;
+  border-radius: 18px;
+  border: 1px solid rgba(228, 233, 244, 0.9);
+  background: rgba(255, 255, 255, 0.74);
+  font-size: 14px;
+  min-height: 48px;
+}
+
+.appointments-actions button,
+.add-btn {
+  padding: 11px 17px;
+  border-radius: 999px;
+}
+
+.appointments-calendar-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.85fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.calendar,
+.next-appointments,
+.doctor-slots,
+.appointments-table,
+.modal {
+  background: var(--cc-card);
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  border-radius: 26px;
+  box-shadow: var(--cc-shadow);
+  backdrop-filter: blur(16px);
+}
+
+.calendar {
+  padding: 18px;
+  overflow: hidden;
+}
+
+.next-appointments,
+.doctor-slots {
+  padding: 20px;
+  min-width: 0;
+}
+
+.next-appointments h3 {
+  margin-bottom: 12px;
+}
+
+.next-appointments ul {
+  list-style: none;
+  padding: 0;
+}
+
+.next-appointments li,
+.doctor-slot {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(228, 233, 244, 0.72);
+  font-size: 14px;
+}
+
+.next-appointments li:last-child,
+.doctor-slot:last-child {
+  border-bottom: none;
+}
+
+.slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.slot {
+  padding: 7px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--cc-blue);
+  color: var(--cc-primary);
+}
+
+.slot.none {
+  background: var(--cc-danger-soft);
+  color: var(--cc-danger-text);
+}
+
+.appointments-table-wrapper {
+  overflow-x: auto;
+  border-radius: 26px;
+  background: var(--cc-card);
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  box-shadow: var(--cc-shadow);
+  padding: 6px;
+}
+
+.appointments-table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+}
+
+.appointments-table th,
+.appointments-table td {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(228, 233, 244, 0.72);
+  vertical-align: middle;
+}
+
+.appointments-table td:last-child {
+  min-width: 170px;
+}
+
+.appointments-table tr:hover td {
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.status.pending,
+.status.scheduled {
+  background: var(--cc-purple);
+  color: var(--cc-primary);
+}
+
+.status.confirmed,
+.status.completed {
+  background: var(--cc-green);
+  color: #438b62;
+}
+
+.status.cancelled {
+  background: var(--cc-danger-soft);
+  color: var(--cc-danger-text);
+}
+
+.appointments-table td button,
+.actions button {
+  padding: 8px 12px;
+  font-size: 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(107, 116, 248, 0.14);
+  cursor: pointer;
+  font-weight: 700;
+  margin-right: 6px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--cc-primary);
+  white-space: nowrap;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.appointments-table td button:hover,
+.actions button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(86, 101, 160, 0.1);
+}
+
+.appointments-table td button:first-child,
+.actions .edit {
+  background: var(--cc-blue);
+  color: var(--cc-primary);
+}
+
+.appointments-table td button:last-child,
+.actions .delete {
+  background: var(--cc-danger-soft);
+  color: var(--cc-danger-text);
+}
+
+.empty-state,
+.empty {
+  text-align: center;
+  padding: 20px 0;
+  color: var(--cc-muted);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(32, 42, 68, 0.28);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.modal {
+  padding: 24px;
+  width: min(720px, 94vw);
+  max-width: 94%;
+}
+
+.modal h2 {
+  margin-bottom: 14px;
+}
+
+.modal label {
+  display: block;
+  color: var(--cc-muted);
+  font-size: 12px;
+  font-weight: 800;
+  margin: 2px 0 6px;
+}
+
+.modal input,
+.modal select {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.modal-actions button {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(107, 116, 248, 0.14);
+  cursor: pointer;
+  color: var(--cc-primary);
+  background: rgba(255, 255, 255, 0.72);
+  font-weight: 700;
+}
+
+.modal-actions button:first-child {
+  background: var(--cc-primary);
+  color: #ffffff;
+}
+
+.modal-actions button:last-child {
+  background: var(--cc-danger-soft);
+  color: var(--cc-danger-text);
+}
+
+.react-calendar {
+  border: none;
+  width: 100%;
+  font-family: inherit;
+  background: transparent;
+}
+
+.react-calendar__navigation button {
+  background: transparent;
+  color: var(--cc-primary);
+  font-weight: 800;
+  border: none;
+  padding: 8px;
+  border-radius: 12px;
+}
+
+.react-calendar__month-view__weekdays {
+  color: var(--cc-muted);
+  font-weight: 800;
+}
+
+.react-calendar__tile {
+  border-radius: 14px;
+  padding: 12px 6px;
+}
+
+.react-calendar__tile--now {
+  background: var(--cc-blue) !important;
+  color: var(--cc-primary) !important;
+}
+
+.react-calendar__tile--active {
+  background: var(--cc-primary) !important;
+  color: #ffffff !important;
+}
+
+.clear-date-btn {
+  background: transparent;
+  border: none;
+  color: var(--cc-muted);
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .appointments-calendar-section {
+    grid-template-columns: 1fr;
+  }
+}
+/* ===== Appointment action/button polish override ===== */
+
+.appointments-page .appointments-table td .actions,
+.appointments-page .actions,
+.appointments-page .row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.appointments-page .appointments-table td button,
+.appointments-page .actions button,
+.appointments-page .row-actions button {
+  min-height: 40px;
+  padding: 8px 15px;
+  border-radius: 999px;
+  font-weight: 800;
+  border: 1px solid rgba(107, 116, 248, 0.16);
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--cc-primary);
+  box-shadow: none;
+  margin: 0;
+}
+
+.appointments-page .appointments-table td button:hover,
+.appointments-page .actions button:hover,
+.appointments-page .row-actions button:hover {
+  background: var(--cc-purple);
+  transform: translateY(-1px);
+}
+
+.appointments-page .appointments-table td button:first-child,
+.appointments-page .actions button:first-child,
+.appointments-page .row-actions button:first-child {
+  background: var(--cc-primary);
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(107, 116, 248, 0.18);
+}
+
+.appointments-page .appointments-table td button:last-child,
+.appointments-page .actions button:last-child,
+.appointments-page .row-actions button:last-child {
+  background: var(--cc-danger-soft);
+  color: var(--cc-danger-text);
+  border-color: rgba(217, 74, 98, 0.16);
+  box-shadow: none;
+}
+
+.appointments-page .appointments-table-wrapper,
+.appointments-page .appointments-table {
+  border-radius: 26px;
+}
+
+.appointments-page .modal {
+  width: min(560px, 94vw);
+}
+
+.appointments-page .modal input,
+.appointments-page .modal select {
+  width: 100%;
+  margin-bottom: 12px;
+}

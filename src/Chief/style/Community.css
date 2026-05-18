@@ -1,0 +1,357 @@
+.Community-page {
+  background: transparent;
+  min-height: 100%;
+  color: var(--cc-text);
+}
+
+.Community-header,
+.Community-actions,
+.Post-actions,
+.comment-header,
+.comment-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.Community-header {
+  margin-bottom: 20px;
+}
+
+.Community-header h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.Community-actions {
+  margin-bottom: 20px;
+}
+
+.Community-search,
+.modal textarea {
+  flex: 1;
+  width: 100%;
+  padding: 13px 15px;
+  border-radius: 18px;
+  border: 1px solid rgba(228, 233, 244, 0.9);
+  background: rgba(255, 255, 255, 0.74);
+  font-size: 14px;
+}
+
+.Community-actions button,
+.post-btn,
+.comments-section button,
+.modal-actions .submit-btn {
+  padding: 10px 16px;
+  border-radius: 999px;
+}
+
+.Community-feed {
+  display: grid;
+  gap: 18px;
+}
+
+.Post-card,
+.modal,
+.comment {
+  background: var(--cc-card);
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  border-radius: 26px;
+  box-shadow: var(--cc-shadow);
+  backdrop-filter: blur(16px);
+}
+
+.Post-card {
+  padding: 20px;
+}
+
+.Post-card img,
+.view-post-modal img {
+  width: 100%;
+  border-radius: 22px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(228, 233, 244, 0.72);
+}
+
+.Post-info h3,
+.view-post-modal h2 {
+  margin: 0 0 10px;
+  color: var(--cc-text);
+  font-weight: 800;
+}
+
+.Post-category,
+.role.doctor,
+.role.patient,
+.role.admin {
+  background: var(--cc-purple);
+  color: var(--cc-primary);
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 9px;
+  display: inline-flex;
+}
+
+.role.patient {
+  background: var(--cc-green);
+  color: #438b62;
+}
+
+.role.admin {
+  background: var(--cc-blue);
+  color: var(--cc-primary);
+}
+
+.Post-actions {
+  margin-top: 14px;
+}
+
+.Post-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.Post-actions button,
+.like-btn {
+  border: 1px solid rgba(107, 116, 248, 0.14);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--cc-primary);
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 8px 13px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.post-btn {
+  background: var(--cc-primary) !important;
+  color: #ffffff !important;
+  padding: 8px 17px;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--cc-muted);
+  margin-top: 40px;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(32, 42, 68, 0.28);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.modal {
+  padding: 24px;
+  width: 460px;
+  max-width: 94%;
+  box-shadow: 0 30px 80px rgba(86, 101, 160, 0.22);
+}
+
+.modal textarea {
+  resize: vertical;
+  min-height: 110px;
+  margin-bottom: 12px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-actions button,
+.modal-actions .cancel-btn {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(107, 116, 248, 0.14);
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--cc-primary);
+  font-weight: 800;
+}
+
+.Attachment-wrapper {
+  display: inline-block;
+  margin-top: 10px;
+}
+
+.Attachment-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border-radius: 999px;
+  background: var(--cc-blue);
+  color: var(--cc-primary);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.comments-section {
+  margin-top: 20px;
+}
+
+.comment {
+  padding: 13px;
+  margin-bottom: 10px;
+  box-shadow: none;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.comment-header,
+.comment-footer {
+  font-size: 13px;
+}
+
+.delete-comment {
+  background: none;
+  border: none;
+  color: var(--cc-danger-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .Community-header,
+  .Community-actions,
+  .Post-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+/* ===== Community grid polish override ===== */
+
+.Community-feed {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+.Post-card {
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px 26px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.Post-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 22px 52px rgba(86, 101, 160, 0.14);
+}
+
+.Post-info {
+  display: grid;
+  gap: 12px;
+}
+
+.Post-info h3 {
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.Post-info p {
+  color: var(--cc-muted);
+  line-height: 1.65;
+  margin: 0;
+}
+
+.Post-actions {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(228, 233, 244, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.Post-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.Post-actions button,
+.like-btn,
+.post-btn {
+  border-radius: 999px;
+  min-height: 42px;
+  padding: 9px 16px;
+  font-weight: 800;
+  border: 1px solid rgba(107, 116, 248, 0.16);
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.Post-actions button:hover,
+.like-btn:hover,
+.post-btn:hover {
+  transform: translateY(-1px);
+}
+
+.Post-actions button:not(.post-btn),
+.like-btn {
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--cc-primary);
+  box-shadow: none;
+}
+
+.Post-actions button:not(.post-btn):hover,
+.like-btn:hover {
+  background: var(--cc-purple);
+}
+
+.post-btn {
+  background: var(--cc-primary) !important;
+  color: #fff !important;
+  box-shadow: 0 14px 28px rgba(107, 116, 248, 0.18);
+}
+
+.Community-actions button,
+.Post-actions .view-btn,
+.Post-actions button:last-child {
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--cc-primary);
+  border: 1px solid rgba(107, 116, 248, 0.16);
+  box-shadow: none;
+}
+
+.Community-actions button:hover,
+.Post-actions .view-btn:hover,
+.Post-actions button:last-child:hover {
+  background: var(--cc-purple);
+  border-color: rgba(107, 116, 248, 0.22);
+}
+
+@media (max-width: 720px) {
+  .Community-feed {
+    grid-template-columns: 1fr;
+  }
+
+  .Post-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
